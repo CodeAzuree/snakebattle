@@ -177,6 +177,8 @@ function PlayGame({
   };
 
   const holdDirection = (direction: Direction) => {
+    // 与键盘相同：先排队，短按也能撑到下一个 tick，不会因为松手太快被丢掉
+    pendingDirectionRef.current = direction;
     heldDirectionRef.current = direction;
   };
   const releaseDirection = () => {
@@ -196,10 +198,11 @@ function PlayGame({
 
   const dpad = compactPlay && (
     <VirtualDPad
+      floating
       size="lg"
       onHold={holdDirection}
       onRelease={releaseDirection}
-      className="shrink-0"
+      className="pointer-events-none absolute right-1 bottom-1 z-20"
     />
   );
 
@@ -221,30 +224,28 @@ function PlayGame({
       </div>
 
       {compactPlay && landscape ? (
-        <div className="flex min-h-0 w-full flex-1 flex-row pt-1">
+        <div className="relative flex min-h-0 w-full flex-1 flex-row pt-1">
           <div
             ref={boardAreaRef}
             className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden touch-none"
           >
             <Board state={state} cellSize={cellSize} />
           </div>
-          <aside className="flex shrink-0 flex-col items-end justify-between gap-2 pl-2">
+          <aside className="flex shrink-0 flex-col items-end justify-between gap-2 pl-2 pr-[11.5rem]">
             {pauseButton}
-            <div className="flex items-end gap-2">
-              <PortraitPanel
-                character={character}
-                speech={speech}
-                emotion={emotion}
-                compact
-                avatarPx={COMPACT_AVATAR_PX}
-                className="w-[11rem] items-center"
-              />
-              {dpad}
-            </div>
+            <PortraitPanel
+              character={character}
+              speech={speech}
+              emotion={emotion}
+              compact
+              avatarPx={COMPACT_AVATAR_PX}
+              className="w-[11rem] items-center"
+            />
           </aside>
+          {dpad}
         </div>
       ) : compactPlay ? (
-        <div className="flex min-h-0 w-full flex-1 flex-col pt-1">
+        <div className="relative flex min-h-0 w-full flex-1 flex-col pt-1">
           <div
             ref={boardAreaRef}
             className="flex min-h-0 w-full flex-1 flex-col items-center overflow-hidden"
@@ -278,7 +279,7 @@ function PlayGame({
               </div>
             </div>
           </div>
-          <div className="flex shrink-0 justify-end px-1 pb-1">{dpad}</div>
+          {dpad}
         </div>
       ) : (
         <div className="relative flex min-h-0 w-full max-w-4xl flex-1 flex-col items-center justify-center gap-8 md:flex-row md:items-start md:justify-center">
