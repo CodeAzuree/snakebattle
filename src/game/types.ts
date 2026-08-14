@@ -7,7 +7,11 @@ export type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
 
 export type PlayerId = "player" | "ai";
 
-export type AICharacterId = "xiaotan" | "laomou" | "shewang";
+/**
+ * `mystery` 是第四位挑战者（自学习 AI）的内部稳定 id，只在代码里使用；
+ * 它展示给玩家的名字存在成长存档里，会随着大模型的进化而改变。
+ */
+export type AICharacterId = "xiaotan" | "laomou" | "shewang" | "mystery";
 
 /**
  * AI 内部状态枚举，对应 docs/DESIGN.md 附录 B 与第四章的台词映射表。
@@ -54,6 +58,10 @@ export interface AIDecisionContext {
   self: SnakeState;
   opponent: SnakeState;
   food: Position;
+  /** 剩余对局时长：策略规则（如「时间不够就冲分」）需要它 */
+  timeRemainingMs: number;
+  /** 已推进的 tick 数：用于惯性、阶段判断 */
+  tickCount: number;
 }
 
 export interface AIDecisionResult {

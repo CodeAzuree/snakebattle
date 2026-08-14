@@ -23,6 +23,13 @@ export function computeEmotion(
       if (scoreDiff >= 2 || state.aiInternalState === "blocking") return "confident";
       return "calm";
     }
+    // 自学习体的情绪先沿用小贪那套比分阈值：它的"性格"由进化出来的台词体现，
+    // 而不是靠一套写死的情绪规则。
+    case "mystery": {
+      if (state.aiInternalState === "deadend" || scoreDiff <= -2) return "tense";
+      if (scoreDiff >= 2) return "confident";
+      return "calm";
+    }
     default:
       return "calm";
   }

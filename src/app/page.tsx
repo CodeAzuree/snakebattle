@@ -13,29 +13,22 @@ export default function HomePage() {
         aria-hidden="true"
       />
 
-      <div className="relative z-10 flex max-w-2xl flex-col items-center gap-8 text-center">
-        <div className="flex flex-col items-center gap-3">
+      <div className="relative z-10 flex max-w-2xl flex-col items-center gap-10 text-center">
+        <div className="flex flex-col items-center gap-4">
           <h1 className="font-pixel text-4xl text-neon-cyan drop-shadow-[0_0_12px_rgba(0,255,242,0.6)] sm:text-6xl">
             CYBERSNAKE
           </h1>
-          <p className="font-pixel text-sm text-muted-foreground">电子蛇战争</p>
+          <div className="flex items-center gap-3 font-pixel text-[10px] text-neon-magenta drop-shadow-[0_0_8px_rgba(255,43,214,0.5)] sm:text-xs">
+            <span aria-hidden="true">◂◂</span>
+            <span className="tracking-[0.4em]">电子蛇战争</span>
+            <span aria-hidden="true">▸▸</span>
+          </div>
         </div>
-
-        <p className="max-w-md text-sm text-foreground/80 sm:text-base">
-          在限时竞速中，与会思考的 AI 蛇一决高下。
-        </p>
 
         <Link href="/select">
           <Button size="lg" className="font-pixel text-sm">
             开始对战
           </Button>
-        </Link>
-
-        <Link
-          href="/about"
-          className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
-        >
-          查看 AI 设计文档
         </Link>
       </div>
     </main>

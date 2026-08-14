@@ -2,6 +2,8 @@ import type { AICharacterId, AIDecisionStrategy } from "../types";
 import { decideGreedy } from "./greedy";
 import { decideBfs } from "./bfs";
 import { decideAdvanced } from "./advanced";
+import { decideStrategy } from "./strategy";
+import { getActiveSpec } from "./mysteryRuntime";
 
 export interface AICharacter {
   id: AICharacterId;
@@ -63,6 +65,26 @@ export const AI_ROSTER: Record<AICharacterId, AICharacter> = {
     challengeLevel: 90,
     expectedPlayerWinRate: "~30%",
   },
+  // 第四位挑战者：name/tagline/challengeLevel 都只是"未觉醒"状态下的占位值，
+  // 真正展示给玩家的信息来自成长存档（见 src/lib/growthStorage.ts）。
+  mystery: {
+    id: "mystery",
+    name: "？？？",
+    title: "自学习体",
+    tagline: "……",
+    description: "一条什么都不会的蛇。每局结束后它会复盘自己的失败，然后变得不一样。",
+    themeColorVar: "--mystery-green",
+    themeColorVarSecondary: "--mystery-teal",
+    avatarSrc: "/avatars/mystery.png",
+    decisionStrategy: (ctx) => decideStrategy(ctx, getActiveSpec()),
+    challengeLevel: 5,
+    expectedPlayerWinRate: "未知",
+  },
 };
 
-export const AI_CHARACTER_IDS: AICharacterId[] = ["xiaotan", "laomou", "shewang"];
+export const AI_CHARACTER_IDS: AICharacterId[] = [
+  "xiaotan",
+  "laomou",
+  "shewang",
+  "mystery",
+];

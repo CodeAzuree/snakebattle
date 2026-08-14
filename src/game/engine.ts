@@ -11,9 +11,11 @@ import {
 } from "./board";
 import type {
   AICharacterId,
+  AIDecisionStrategy,
   Direction,
   GameState,
   MatchResult,
+  Position,
   SnakeState,
 } from "./types";
 
@@ -37,11 +39,24 @@ function createAiSnake(): SnakeState {
   return { id: "ai", body, direction: "LEFT", alive: true, score: 0 };
 }
 
+/**
+ * 初始食物位置固定取网格正中心（双方蛇的初始占位都在中心行/列之外，保证不重叠），
+ * 不在此处调用 Math.random()。
+ *
+ * 原因：`createInitialGameState` 会被 `useState(() => createInitialGameState(...))`
+ * 这种初始化器调用，而客户端组件在 Next.js 里首次渲染时会先做一次 SSR，
+ * 再在浏览器端 hydrate 一次——如果这里用随机数生成食物位置，服务端和客户端会各自
+ * 随机出不同的坐标，导致 hydration mismatch（控制台报错）。真正的随机食物位置
+ * 由 `rerollFoodPosition` 在客户端 mount 后的 `useEffect` 里再生成一次。
+ */
+function centerFoodPosition(gridSize: number): Position {
+  return { x: Math.floor(gridSize / 2), y: Math.floor(gridSize / 2) };
+}
+
 export function createInitialGameState(aiCharacterId: AICharacterId): GameState {
   const player = createPlayerSnake();
   const ai = createAiSnake();
-  const occupied = buildOccupiedSet(player.body, ai.body);
-  const food = randomEmptyPosition(GRID_SIZE, occupied);
+  const food = centerFoodPosition(GRID_SIZE);
 
   return {
     gridSize: GRID_SIZE,
@@ -58,6 +73,15 @@ export function createInitialGameState(aiCharacterId: AICharacterId): GameState 
   };
 }
 
+/**
+ * 只在客户端 mount 之后调用一次，把食物从确定性的中心位置重新随机摆放，
+ * 避免上面提到的 SSR/CSR 随机数不一致问题。
+ */
+export function rerollFoodPosition(state: GameState): GameState {
+  const occupied = buildOccupiedSet(state.player.body, state.ai.body);
+  return { ...state, food: randomEmptyPosition(state.gridSize, occupied) };
+}
+
 function resolveDirection(current: Direction, requested: Direction | null): Direction {
   if (!requested) return current;
   if (isOpposite(requested, current)) return current;
@@ -65,19 +89,38 @@ function resolveDirection(current: Direction, requested: Direction | null): Dire
 }
 
 /**
+ * tick 的可注入点。正常对局两个字段都不传，走 roster 查表 + 随机刷豆；
+ * 沙盒回测传入候选策略与带种子的刷豆函数以保证可复现，
+ * 回放则两者都传入"照本宣科"的版本以精确还原历史对局。
+ */
+export interface StepOptions {
+  /** 覆盖 AI 决策来源，用于试跑任意策略而不必先写进 roster */
+  aiStrategy?: AIDecisionStrategy;
+  /** 覆盖食物刷新位置的来源 */
+  foodPicker?: (gridSize: number, occupied: Set<string>) => Position;
+}
+
+/**
  * 推进一个 tick：读取玩家方向输入 → AI 决策 → 双蛇同步移动 → 碰撞判定
  * → 食物判定 → 计分/计时 → 胜负判定。
  * 对应 docs/DESIGN.md 2.1/2.4 节与附录 B 的 tick 执行顺序约定。
  */
-export function stepGame(state: GameState, playerInput: Direction | null): GameState {
+export function stepGame(
+  state: GameState,
+  playerInput: Direction | null,
+  tickMs: number = TICK_MS,
+  options: StepOptions = {}
+): GameState {
   if (state.phase !== "playing") return state;
 
-  const character = AI_ROSTER[state.aiCharacterId];
-  const aiDecision = character.decisionStrategy({
+  const strategy = options.aiStrategy ?? AI_ROSTER[state.aiCharacterId].decisionStrategy;
+  const aiDecision = strategy({
     gridSize: state.gridSize,
     self: state.ai,
     opponent: state.player,
     food: state.food,
+    timeRemainingMs: state.timeRemainingMs,
+    tickCount: state.tickCount,
   });
 
   const playerDirection = resolveDirection(state.player.direction, playerInput);
@@ -126,10 +169,11 @@ export function stepGame(state: GameState, playerInput: Direction | null): GameS
 
   if ((playerEats && !playerDead) || (aiEats && !aiDead)) {
     const occupied = buildOccupiedSet(nextPlayerBody, nextAiBody);
-    food = randomEmptyPosition(state.gridSize, occupied);
+    const pickFood = options.foodPicker ?? randomEmptyPosition;
+    food = pickFood(state.gridSize, occupied);
   }
 
-  const timeRemainingMs = Math.max(0, state.timeRemainingMs - TICK_MS);
+  const timeRemainingMs = Math.max(0, state.timeRemainingMs - tickMs);
 
   let result: MatchResult = null;
   let phase: GameState["phase"] = "playing";

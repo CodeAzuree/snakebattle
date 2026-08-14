@@ -60,7 +60,8 @@ export function buildOccupiedSet(...bodies: Position[][]): Set<string> {
  */
 export function randomEmptyPosition(
   gridSize: number,
-  occupied: Set<string>
+  occupied: Set<string>,
+  rng: () => number = Math.random
 ): Position {
   const candidates: Position[] = [];
   for (let x = 0; x < gridSize; x++) {
@@ -74,7 +75,7 @@ export function randomEmptyPosition(
   if (candidates.length === 0) {
     return { x: 0, y: 0 };
   }
-  return candidates[Math.floor(Math.random() * candidates.length)];
+  return candidates[Math.floor(rng() * candidates.length)];
 }
 
 /**
