@@ -9,10 +9,13 @@ import { useMysteryGrowth } from "@/game/growth/useMysteryGrowth";
 import { useEvolutionRun } from "@/game/growth/evolutionStore";
 import type { AICharacterId, Direction } from "@/game/types";
 import { useGameLoop } from "@/hooks/useGameLoop";
+import { useBoardCellSize } from "@/hooks/useBoardCellSize";
+import { useCompactPlay, useMediaQuery } from "@/hooks/useMediaQuery";
 import { useAIState } from "@/game/persona/useAIState";
 import { Board } from "@/components/board/Board";
 import { ScoreBoard } from "@/components/hud/ScoreBoard";
 import { PortraitPanel } from "@/components/ai-panel/PortraitPanel";
+import { VirtualDPad } from "@/components/hud/VirtualDPad";
 import { ResultModal } from "@/components/result/ResultModal";
 import { CountdownOverlay } from "@/components/hud/CountdownOverlay";
 import { Button } from "@/components/ui/8bit/button";
@@ -45,6 +48,9 @@ const KEY_TO_DIRECTION: Record<string, Direction> = {
   D: "RIGHT",
 };
 
+const COMPACT_AVATAR_PX = 96;
+const PORTRAIT_AVATAR_PX = 128;
+
 function isValidCharacterId(value: string | null): value is AICharacterId {
   return !!value && (AI_CHARACTER_IDS as string[]).includes(value);
 }
@@ -60,6 +66,12 @@ function PlayGame({
   const [state, setState] = useState(() => createInitialGameState(aiCharacterId));
   const [countdownDone, setCountdownDone] = useState(false);
   const pendingDirectionRef = useRef<Direction | null>(null);
+  const heldDirectionRef = useRef<Direction | null>(null);
+  const compactPlay = useCompactPlay();
+  const landscape = useMediaQuery("(orientation: landscape)");
+  const { containerRef: boardAreaRef, cellSize } = useBoardCellSize(state.gridSize, {
+    layoutKey: compactPlay ? (landscape ? "landscape" : "portrait") : "desktop",
+  });
 
   const isMystery = aiCharacterId === "mystery";
   const { growth, persona, readiness, handleMatchEnd, clearReadiness } = useMysteryGrowth(isMystery);
@@ -139,7 +151,7 @@ function PlayGame({
     () => {
       // 先取出并清空排队的方向输入，再交给 setState 的更新函数使用，
       // 避免 setState 的更新函数被 React 延迟调用时读到已经被清空的值。
-      const inputDirection = pendingDirectionRef.current;
+      const inputDirection = pendingDirectionRef.current ?? heldDirectionRef.current;
       pendingDirectionRef.current = null;
       setState((prev) => stepGame(prev, inputDirection, tickMs));
     },
@@ -158,41 +170,139 @@ function PlayGame({
   // "再来一局"：同对手、同速度直接重开一局，回到倒计时，不用跳回选角页。
   const restartGame = () => {
     pendingDirectionRef.current = null;
+    heldDirectionRef.current = null;
     clearReadiness();
     setState(rerollFoodPosition(createInitialGameState(aiCharacterId)));
     setCountdownDone(false);
   };
 
+  const holdDirection = (direction: Direction) => {
+    heldDirectionRef.current = direction;
+  };
+  const releaseDirection = () => {
+    heldDirectionRef.current = null;
+  };
+
+  const pauseButton = countdownDone && (
+    <button
+      type="button"
+      onClick={togglePause}
+      aria-label="暂停"
+      className="pixel-border pixel-press z-10 flex h-9 w-9 touch-manipulation items-center justify-center border-border bg-card font-pixel text-xs compact-play:min-h-11 compact-play:min-w-11"
+    >
+      ❚❚
+    </button>
+  );
+
+  const dpad = compactPlay && (
+    <VirtualDPad
+      size="lg"
+      onHold={holdDirection}
+      onRelease={releaseDirection}
+      className="shrink-0"
+    />
+  );
+
   return (
-    <main className="flex min-h-screen flex-col items-center gap-6 px-4 py-8">
-      <div className="w-full max-w-4xl">
-        <ScoreBoard state={state} aiName={character.name} aiThemeColorVar={character.themeColorVar} />
+    <main
+      className={
+        compactPlay
+          ? "flex h-dvh max-h-dvh flex-col items-center overflow-hidden px-2 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
+          : "flex min-h-dvh flex-col items-center overflow-hidden px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:gap-6 md:px-4 md:py-8"
+      }
+    >
+      <div className="w-full max-w-4xl shrink-0">
+        <ScoreBoard
+          state={state}
+          aiName={character.name}
+          aiThemeColorVar={character.themeColorVar}
+          compact={compactPlay}
+        />
       </div>
 
-      <div className="relative flex w-full max-w-4xl flex-1 flex-col items-center justify-center gap-8 sm:flex-row sm:items-start sm:justify-center">
-        {countdownDone && (
-          <button
-            type="button"
-            onClick={togglePause}
-            aria-label="暂停"
-            className="pixel-border pixel-press absolute -top-2 right-0 z-10 flex h-9 w-9 items-center justify-center border-border bg-card font-pixel text-xs sm:top-0"
+      {compactPlay && landscape ? (
+        <div className="flex min-h-0 w-full flex-1 flex-row pt-1">
+          <div
+            ref={boardAreaRef}
+            className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden touch-none"
           >
-            ❚❚
-          </button>
-        )}
-
-        <Board state={state} />
-        <PortraitPanel character={character} speech={speech} emotion={emotion} />
-
-        {!countdownDone && (
-          <div className="fixed inset-0 z-30">
-            <CountdownOverlay
-              seconds={COUNTDOWN_SECONDS}
-              onDone={() => setCountdownDone(true)}
-            />
+            <Board state={state} cellSize={cellSize} />
           </div>
-        )}
-      </div>
+          <aside className="flex shrink-0 flex-col items-end justify-between gap-2 pl-2">
+            {pauseButton}
+            <div className="flex items-end gap-2">
+              <PortraitPanel
+                character={character}
+                speech={speech}
+                emotion={emotion}
+                compact
+                avatarPx={COMPACT_AVATAR_PX}
+                className="w-[11rem] items-center"
+              />
+              {dpad}
+            </div>
+          </aside>
+        </div>
+      ) : compactPlay ? (
+        <div className="flex min-h-0 w-full flex-1 flex-col pt-1">
+          <div
+            ref={boardAreaRef}
+            className="flex min-h-0 w-full flex-1 flex-col items-center overflow-hidden"
+          >
+            <div
+              className="flex max-w-full flex-col"
+              style={{ width: state.gridSize * cellSize }}
+            >
+              <div className="relative shrink-0 touch-none">
+                <Board state={state} cellSize={cellSize} />
+              </div>
+              <div className="flex shrink-0 justify-end py-1">{pauseButton}</div>
+              <div className="flex items-center gap-2">
+                <PortraitPanel
+                  character={character}
+                  speech={speech}
+                  emotion={emotion}
+                  compact
+                  parts="avatar"
+                  avatarPx={PORTRAIT_AVATAR_PX}
+                />
+                <PortraitPanel
+                  character={character}
+                  speech={speech}
+                  emotion={emotion}
+                  compact
+                  parts="speech"
+                  tailAlign="left"
+                  className="min-w-0 flex-1"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex shrink-0 justify-end px-1 pb-1">{dpad}</div>
+        </div>
+      ) : (
+        <div className="relative flex min-h-0 w-full max-w-4xl flex-1 flex-col items-center justify-center gap-8 md:flex-row md:items-start md:justify-center">
+          {countdownDone && (
+            <div className="absolute -top-1 right-0 md:top-0">{pauseButton}</div>
+          )}
+          <div
+            ref={boardAreaRef}
+            className="flex min-h-0 min-w-0 items-center justify-center touch-none"
+          >
+            <Board state={state} cellSize={cellSize} />
+          </div>
+          <PortraitPanel character={character} speech={speech} emotion={emotion} />
+        </div>
+      )}
+
+      {!countdownDone && (
+        <div className="fixed inset-0 z-30">
+          <CountdownOverlay
+            seconds={COUNTDOWN_SECONDS}
+            onDone={() => setCountdownDone(true)}
+          />
+        </div>
+      )}
 
       {state.phase === "paused" && (
         <Dialog open>
@@ -204,8 +314,8 @@ function PlayGame({
               <Button className="w-full" onClick={togglePause}>
                 继续
               </Button>
-              <Button variant="outline" className="w-full" onClick={() => router.push("/")}>
-                返回首页
+              <Button variant="outline" className="w-full" onClick={() => router.push("/select")}>
+                返回对手选择
               </Button>
             </DialogFooter>
           </DialogContent>

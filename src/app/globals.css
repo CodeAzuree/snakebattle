@@ -2,6 +2,12 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant pointer-coarse (@media (pointer: coarse));
+@custom-variant compact-play {
+  @media (max-width: 767px), (max-height: 500px) {
+    @slot;
+  }
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -116,10 +122,12 @@
       linear-gradient(rgba(0, 255, 242, 0.05) 1px, transparent 1px),
       linear-gradient(90deg, rgba(0, 255, 242, 0.05) 1px, transparent 1px);
     background-size: 32px 32px;
+    overscroll-behavior: none;
   }
 
   html {
     @apply font-sans;
+    overscroll-behavior: none;
   }
 
   h1,

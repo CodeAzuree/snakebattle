@@ -144,8 +144,8 @@ export function ResultModal({
               再来一局
             </Button>
           )}
-          <Button variant="outline" className="w-full" onClick={() => router.push("/")}>
-            返回首页
+          <Button variant="outline" className="w-full" onClick={() => router.push("/select")}>
+            返回对手选择
           </Button>
         </DialogFooter>
       </DialogContent>

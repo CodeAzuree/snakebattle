@@ -15,12 +15,12 @@ export default function HomePage() {
 
       <div className="relative z-10 flex max-w-2xl flex-col items-center gap-10 text-center">
         <div className="flex flex-col items-center gap-4">
-          <h1 className="font-pixel text-4xl text-neon-cyan drop-shadow-[0_0_12px_rgba(0,255,242,0.6)] sm:text-6xl">
+          <h1 className="font-pixel text-2xl text-neon-cyan drop-shadow-[0_0_12px_rgba(0,255,242,0.6)] sm:text-4xl md:text-6xl">
             CYBERSNAKE
           </h1>
-          <div className="flex items-center gap-3 font-pixel text-[10px] text-neon-magenta drop-shadow-[0_0_8px_rgba(255,43,214,0.5)] sm:text-xs">
+          <div className="flex items-center gap-3 font-pixel text-xs text-neon-magenta drop-shadow-[0_0_8px_rgba(255,43,214,0.5)] sm:text-sm">
             <span aria-hidden="true">◂◂</span>
-            <span className="tracking-[0.4em]">电子蛇战争</span>
+            <span className="tracking-[0.15em] md:tracking-[0.4em]">电子蛇战争</span>
             <span aria-hidden="true">▸▸</span>
           </div>
         </div>

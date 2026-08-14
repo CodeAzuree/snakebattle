@@ -37,12 +37,13 @@ export function CharacterCard({
       type="button"
       onClick={onSelect}
       className={cn(
-        "pixel-border pixel-press flex w-full max-w-[260px] flex-col items-center gap-3 border-border bg-card p-4 text-left transition-all duration-200",
+        "pixel-border pixel-press flex w-full flex-col items-center border-border bg-card text-left transition-all duration-200",
+        "gap-1.5 p-2 max-w-none lg:max-w-[260px] lg:gap-3 lg:p-4",
         selected
-          ? "scale-105"
+          ? "lg:scale-105"
           : dimmed
             ? "opacity-45"
-            : "opacity-90 hover:scale-[1.02] hover:opacity-100"
+            : "opacity-90 hover:opacity-100 lg:hover:scale-[1.02]"
       )}
       style={{
         borderColor: selected ? `var(${character.themeColorVar})` : undefined,
@@ -62,13 +63,19 @@ export function CharacterCard({
       }}
     >
       <div
-        className="pixel-border relative h-[180px] w-[180px] overflow-hidden"
+        className="pixel-border relative h-[88px] w-[88px] overflow-hidden md:h-[140px] md:w-[140px] lg:h-[180px] lg:w-[180px]"
         style={{ borderColor: `var(${character.themeColorVar})` }}
       >
-        <Image src={character.avatarSrc} alt={character.name} fill className="object-cover" sizes="180px" />
+        <Image
+          src={character.avatarSrc}
+          alt={character.name}
+          fill
+          className="object-cover"
+          sizes="(max-width: 767px) 88px, (max-width: 1023px) 140px, 180px"
+        />
       </div>
 
-      <p className="font-pixel text-lg" style={{ color: themeColor }}>
+      <p className="font-pixel text-sm lg:text-lg" style={{ color: themeColor }}>
         {character.name}
       </p>
 
@@ -78,7 +85,7 @@ export function CharacterCard({
         </PixelChip>
       )}
 
-      <p className="min-h-[2.8rem] text-center text-sm leading-relaxed text-foreground/90">
+      <p className="line-clamp-2 min-h-0 text-center text-xs leading-snug text-foreground/90 lg:min-h-[2.8rem] lg:text-sm lg:leading-relaxed">
         「{character.tagline}」
       </p>
 

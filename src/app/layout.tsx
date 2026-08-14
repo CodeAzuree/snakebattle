@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -11,6 +11,12 @@ const pixelFont = localFont({
 export const metadata: Metadata = {
   title: "CyberSnake / 电子蛇战争",
   description: "在限时竞速中，与会思考的 AI 蛇一决高下",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

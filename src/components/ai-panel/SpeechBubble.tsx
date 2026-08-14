@@ -8,6 +8,8 @@ interface SpeechBubbleProps {
   text: string;
   themeColorVar: string;
   className?: string;
+  /** 尖角对准头像：桌面偏下左，横屏居中朝下，竖屏朝左 */
+  tailAlign?: "start" | "center" | "left";
 }
 
 /**
@@ -16,7 +18,12 @@ interface SpeechBubbleProps {
  * 注意：父组件需在每次台词切换时传入变化的 key（如 speech.key），
  * 使本组件随台词内容一起重新挂载，从而自然复位"浮现"动效。
  */
-export function SpeechBubble({ text, themeColorVar, className }: SpeechBubbleProps) {
+export function SpeechBubble({
+  text,
+  themeColorVar,
+  className,
+  tailAlign = "start",
+}: SpeechBubbleProps) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -35,7 +42,13 @@ export function SpeechBubble({ text, themeColorVar, className }: SpeechBubblePro
     >
       {text}
       <span
-        className="absolute -bottom-[9px] left-6 h-3 w-3 rotate-45 border-r-2 border-b-2 bg-card"
+        className={
+          tailAlign === "left"
+            ? "absolute top-1/2 -left-[9px] h-3 w-3 -translate-y-1/2 rotate-45 border-b-2 border-l-2 bg-card"
+            : tailAlign === "center"
+              ? "absolute -bottom-[9px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-r-2 border-b-2 bg-card"
+              : "absolute -bottom-[9px] left-6 h-3 w-3 rotate-45 border-r-2 border-b-2 bg-card"
+        }
         style={{ borderColor: `var(${themeColorVar})` }}
         aria-hidden="true"
       />
